@@ -1,0 +1,63 @@
+name: Corrigir estrutura do Gestão PRO
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  reorganizar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar os arquivos do repositório
+        uses: actions/checkout@v4
+
+      - name: Organizar as pastas e salvar
+        shell: bash
+        run: |
+          set -e
+          mkdir -p src/pages src/components src/lib public supabase
+
+          move_if_exists() {
+            if [ -f "$1" ]; then
+              mv "$1" "$2"
+            fi
+          }
+
+          for f in Ajustes.tsx Comparador.tsx Dashboard.tsx Historico.tsx Operacoes.tsx Relatorio.tsx; do
+            move_if_exists "$f" src/pages/
+          done
+
+          for f in Layout.tsx MetaDoDia.tsx RegistroForm.tsx Charts.tsx ui.tsx; do
+            move_if_exists "$f" src/components/
+          done
+
+          for f in calc.ts format.ts seed.ts store.tsx supabase.ts types.ts; do
+            move_if_exists "$f" src/lib/
+          done
+
+          for f in App.tsx main.tsx index.css vite-env.d.ts; do
+            move_if_exists "$f" src/
+          done
+
+          for f in icon.svg icon-192.png icon-512.png; do
+            move_if_exists "$f" public/
+          done
+
+          move_if_exists schema.sql supabase/
+
+          if [ -f env.example ]; then
+            mv env.example .env.example
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+
+          if ! git diff --cached --quiet; then
+            git commit -m "Corrige estrutura de pastas do Gestão PRO"
+            git push origin HEAD:main
+          else
+            echo "Nenhuma alteração de estrutura necessária."
+          fi
